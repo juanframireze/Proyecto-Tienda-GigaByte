@@ -1,0 +1,1528 @@
+#include <iostream>
+#include <bits/stdc++.h>
+
+using namespace std;
+
+//Declaracion de constantes
+const char rutaArchivoClientes [] = "informacionClientes.bin";
+const char rutaArchivoProductosSucursal1 [] = "informacionInventarioSucursal1.bin";
+const char rutaArchivoProductosSucursal2 [] = "informacionInventarioSucursal2.bin";
+const char rutaArchivoRegistroFacturas []= "registroFacturasdeVenta.bin";
+const int NMAXPROD = 20;//Constante definida para el número máximo de productos que puede comprar un cliente por factura
+const int TAMNOMBRES = 100;//Constante definida para el nombre de clientes y productos
+const int TAMNUM = 35;//Constante definida para el número de caracteres de la cédula télefo y código de productos
+const int CANTFECHAS = 40; //Constante definida para el tamaño de las cadenas de caracteres de las fechas
+const int NSUC = 100; //Constante para definir el numero de productos en cada sucursales
+const int NC = 70; //Cantidad de Clientes
+const int NF = 70; //Numero de Facturas
+
+//Declaracion de estructuras
+struct scliente{
+    char cedula [TAMNUM];
+    char nombre [TAMNOMBRES];
+    char telefono [TAMNUM];
+};
+
+struct sSucursal{
+    char nombreSucursal [TAMNOMBRES];
+    int cantUnidadesProducto;
+    char codigoProducto [TAMNUM];
+    char nombreProducto [TAMNOMBRES];
+    long long precio;
+};
+
+struct sRegistroPrint{
+    char codigo [TAMNUM];
+    char nombre [TAMNOMBRES];
+    int cant;
+    long long precio;
+};
+
+struct sFactura{
+    char cedulaCliente [TAMNUM];
+    char nombreCliente [TAMNOMBRES];
+    char telefono [TAMNUM];
+    char nombreSucursal [TAMNOMBRES];
+    char codigoProducto [TAMNUM];
+    char nombreProducto [TAMNOMBRES];
+    sRegistroPrint registros[NMAXPROD];
+    long long precio;
+    long long vTotal;
+    long long subTotal;
+    int vIva;
+    char medioPago[TAMNOMBRES];
+    long int numFacturaVenta;
+    int cantProductosAdquiridos;
+    int totalporCantProductos;
+    char fecha[CANTFECHAS];
+};
+
+//Declaracion de funciones
+void mostrarMenu();
+int cargarClientes(scliente clientes[]);
+int cargarProductosSucursal1 (sSucursal inventarios1[]);
+int cargarProductosSucursal2 (sSucursal inventarios2[]);
+int cargarRegistrodeVentas (sFactura facturas []);
+int adicionarCliente (scliente clientes [], int cantClientes);
+int eliminarCliente (scliente clientes [], int cantClientes);
+void adicionProductosInventario (sSucursal inventarios1 [], int  &cantProductosSucursal1, sSucursal inventarios2 [], int &cantProductosSucursal2);
+int adicionarProductoSucursal1(sSucursal inventarios1 [], int  cantProductosSucursal1, sSucursal inventarios2 [], int cantProductisSucursal2);
+int adicionarProductoSucursal2(sSucursal inventarios2 [], int  cantProductosSucursal2, sSucursal inventarios1 [], int cantProductosSucursal1);
+void eliminarProductosInventario (sSucursal inventarios1 [], sSucursal inventarios2 [], int &cantProductosSucursal1, int &cantProductosSucursal2);
+int eliminarProductoSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1, sSucursal inventarios2 [], int &cantProductosSucursal2);
+int eliminarProductoSucursal2 (sSucursal inventarios2 [], int  cantProductosSucursal2, sSucursal inventarios1 [], int &cantProductosSucursal1);
+void modificarCantidadUnidades(sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2);
+void modificarPrecioUnidades(sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2);
+void buscarProductosNombre (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2);
+void buscarProductosporCodigo (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2);
+string generarFechayHora();
+int registrarGenerarVenta(sFactura facturas[], scliente clientes[], sSucursal inventarios1[], sSucursal inventarios2[], int cantClientes, int cantProductosSucursal1, int cantProductosSucursal2, int  cantVentas);
+void imprimirFactura1(sFactura facturas[], int  cantVentas);
+void imprimirFactura2(sFactura facturas[], int  cantVentas);
+void consultaVentas (sFactura facturas[], int cantVentas);
+void guardarClientes(scliente clientes[], int cantClientes);
+void guardarProductosSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1);
+void guardarProductosSucursal2 (sSucursal inventarios2 [], int cantProductosSucursal2);
+void guardarRegistroVentas (sFactura facturas [], int cantVentas);
+void guardartxtVentas (sFactura facturas [], int cantVentas);
+void guardartxtClientes (scliente clientes [], int cantClientes);
+void guardartxtSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1);
+void guardartxtSucursal2 (sSucursal inventarios2 [], int cantProductosSucursal2);
+
+int main() {
+    int menuOpcion = 0;
+    int cantClientes = 0;
+    int cantProductosSucursal1 = 0;
+    int cantProductosSucursal2 = 0;
+    int cantVentas = 0;
+    int productosAdquirir = 0;
+
+    scliente clientes[NC];
+    sSucursal inventarios1[NSUC];
+    sSucursal inventarios2[NSUC];
+    sFactura facturas [NF];
+
+    string respuesta;
+    string buffer1="Tienda Azkaban";
+    string buffer2="Tienda Death Star";
+
+    strcpy(inventarios1[0].nombreSucursal, buffer1.c_str());
+    strcpy(inventarios2[1].nombreSucursal, buffer2.c_str());
+
+    cantClientes = cargarClientes(clientes);
+    cantProductosSucursal1 = cargarProductosSucursal1(inventarios1);
+    cantProductosSucursal2 = cargarProductosSucursal2(inventarios2);
+    cantVentas = cargarRegistrodeVentas(facturas);
+
+    cout << " Bienvenido a Nuestra Tienda GigaByte " << endl;
+    do {
+        mostrarMenu();
+        cout << endl;
+        cout << "Ingrese el numero de opcion del menu, para ejecutarlo:" << endl;
+        cin >> menuOpcion;
+        switch (menuOpcion) {
+            case 1:
+                cout << "Ha seleccionado la opcion numero uno, adicionar cliente" << endl;
+                cantClientes = adicionarCliente(clientes, cantClientes);
+                break;
+            case 2:
+                cout << "Ha seleccionado la opcion numero dos, eliminar cliente" << endl;
+                cantClientes = eliminarCliente(clientes, cantClientes);
+                break;
+            case 3:
+                cout << "Ha seleccionado la opcion numero tres, registrar venta y generar factura" << endl;
+                cantVentas = registrarGenerarVenta(facturas, clientes, inventarios1,  inventarios2,cantClientes,cantProductosSucursal1, cantProductosSucursal2,cantVentas);
+                break;
+            case 4:
+                cout << "Ha seleccionado la opcion numero cuatro, adicionar productos nuevos al inventario" << endl << endl;
+                adicionProductosInventario(inventarios1, cantProductosSucursal1, inventarios2, cantProductosSucursal2);
+                break;
+            case 5:
+                cout << "Ha seleccionado la opcion numero cinco, eliminar productos del inventario" << endl << endl;
+                eliminarProductosInventario (inventarios1, inventarios2, cantProductosSucursal1, cantProductosSucursal2);
+                break;
+            case 6:
+                cout<< "Ha seleccionado la opcion numero seis, modificar la cantidad de los productos de la tienda"
+                    << endl;
+                modificarCantidadUnidades(inventarios1, inventarios2, cantProductosSucursal1, cantProductosSucursal2);
+                break;
+            case 7:
+                cout<< "Ha seleccionado la opcion numero siete, modificar el precio de los productos de la tienda"<< endl;
+                modificarPrecioUnidades(inventarios1, inventarios2, cantProductosSucursal1, cantProductosSucursal2);
+                break;
+            case 8:
+                cout<< "Ha seleccionado la opcion numero ocho, conocer que productos se encuentran disponibles en cada sucursal"<< endl << endl;
+                buscarProductosNombre(inventarios1, inventarios2, cantProductosSucursal1, cantProductosSucursal2);
+                break;
+            case 9:
+                cout<< "Ha seleccionado la opcion numero nueve, consultar por codigo de producto, disponibilidad en sucursales"<< endl << endl;
+                buscarProductosporCodigo(inventarios1, inventarios2, cantProductosSucursal1, cantProductosSucursal2);
+                break;
+            case 10:
+                cout << "Ha seleccionado la opcion numero diez, consultar historico de ventas por cliente"<< endl;
+                consultaVentas(facturas, cantVentas);
+                break;
+            case 11:
+
+                cout << "Ha seleccionado la opcion numero once, guardar informacion y salir" << endl;
+                guardartxtClientes(clientes, cantClientes);
+                guardarClientes(clientes, cantClientes);
+                guardartxtSucursal1 (inventarios1 ,cantProductosSucursal1);
+                guardartxtSucursal2 ( inventarios2 ,cantProductosSucursal2);
+                guardarProductosSucursal1 (inventarios1,cantProductosSucursal1);
+                guardarProductosSucursal2 ( inventarios2,cantProductosSucursal2);
+                guardarRegistroVentas(facturas, cantVentas);
+                guardartxtVentas(facturas, cantVentas);
+                break;
+        }
+        cout << endl;
+    } while (menuOpcion != 11);
+    return 0;
+}
+void mostrarMenu(){
+    cout << "Menu:" << endl;
+    cout << " 1. Adicionar cliente " << endl;
+    cout << " 2. Eliminar cliente" << endl;
+    cout << " 3. Registrar venta y Generar factura" << endl;
+    cout << " 4. Adicionar productos nuevos al inventario" << endl;
+    cout << " 5. Eliminar productos del inventario " << endl;
+    cout << " 6. Modificar cantidad de articulos disponibles" << endl;
+    cout << " 7. Modificar precio de los articulos disponibles"<<endl;
+    cout << " 8. Conocer que productos se encuentran disponibles en cada sucursal" << endl;
+    cout << " 9. Consultar por codigo de producto para saber que existencias hay y en que sucursal se encuentra"<< endl;
+    cout << " 10. Consultar historico de ventas por cliente" << endl;
+    cout <<" 11. Guardar y Salir"<<endl;
+}
+int adicionarCliente (scliente clientes [], int cantClientes){
+    scliente cliente;
+    cout << endl;
+    cout <<"Ingrese la cedula de identificacion del nuevo cliente"<< endl;
+    cin >> cliente.cedula;
+    bool existencia = false;
+    for (int i = 0; i < cantClientes; i++){
+        if (strcmp(clientes[i].cedula,cliente.cedula) == 0 ){
+            existencia = true;
+        }
+    }
+    if (existencia){
+        cout <<"No ha sido posible anadir al usuario al sistema, ya existe alguien identificado con la cedula digitada"<< endl;
+        return cantClientes;
+    }
+    else{
+        string buffer;
+        cin.ignore(1);
+        cout <<"Escriba el nombre del nuevo usuario en el sistema"<< endl;
+        getline(cin,buffer);
+        strcpy(cliente.nombre,buffer.c_str());
+        cout <<"Digite el numero telefonico del nuevo cliente"<< endl;
+        cin >> cliente.telefono;
+        clientes [cantClientes] = cliente;
+        cantClientes++;
+        cout << endl <<"Se ha agregado al cliente de manera exitosa"<< endl;
+        return cantClientes;
+    }
+}
+void adicionProductosInventario (sSucursal inventarios1 [], int  &cantProductosSucursal1, sSucursal inventarios2 [], int &cantProductosSucursal2){
+    int respuesta = 0;
+    cout << "Seleccione el numero de la tienda a escoger para agregar productos" << endl;
+    cout << "1. Tienda Azkaban" << endl;
+    cout << "2. Tienda Death Star" << endl;
+    cin >> respuesta;
+    if (respuesta == 1){
+        cantProductosSucursal1 = adicionarProductoSucursal1(inventarios1, cantProductosSucursal1, inventarios2, cantProductosSucursal2);
+    }
+    else if (respuesta == 2){
+        cantProductosSucursal2 = adicionarProductoSucursal2(inventarios2, cantProductosSucursal2, inventarios1, cantProductosSucursal1);
+    }
+    else {
+        cout << "Opcion no valida, regresando al menu principal ..." << endl;
+    }
+}
+int adicionarProductoSucursal1(sSucursal inventarios1 [], int  cantProductosSucursal1, sSucursal inventarios2 [], int cantProductosSucursal2){
+    sSucursal inventario1;
+    string buffer;
+    int pos = -1;
+    cout << endl;
+    cin.ignore(1);
+    cout << "Ingrese el codigo del producto" << endl;
+    cin >> inventario1.codigoProducto;
+    cin.ignore(1);
+    bool exist = false;
+    bool exist2 = false;
+    for (int i = 0; i < cantProductosSucursal1; i++) {
+        if (strcmp(inventarios1[i].codigoProducto, inventario1.codigoProducto) == 0) {
+            exist = true;
+        }
+    }
+    for (int i = 0; i < cantProductosSucursal2; i++) {
+        if (strcmp(inventarios2[i].codigoProducto, inventario1.codigoProducto) == 0) {
+            exist2 = true;
+            pos = i;
+        }
+    }
+    if (exist && exist2) {
+        cout << "No ha sido posible agregar un nuevo producto al inventario, ya existe un producto con el mismo codigo, registrado en ambas sucursales"
+             << endl;
+        return cantProductosSucursal1;
+    } else if (exist){
+        cout <<"No ha sido posible realizar el proceso, producto existente en el inventario de la sucursal: "<<inventario1.nombreSucursal<<" "<< endl;
+        return cantProductosSucursal1;
+    }else if (!exist && exist2) {
+        buffer = inventarios2[pos].nombreProducto;
+        strcpy(inventario1.nombreProducto, buffer.c_str());
+        inventario1.precio = inventarios2[pos].precio;
+        inventario1.cantUnidadesProducto = 1;
+        inventarios1[cantProductosSucursal1] = inventario1;
+        cantProductosSucursal1++;
+        cout << "Se ha agregado el producto de manera exitosa, teniendo en cuenta la existencia del codigo correspondiente a un producto fijo de la sucursal que recibe el nombre de: "<<inventarios2->nombreSucursal<<" " << endl;
+        return cantProductosSucursal1;
+    }
+    else{
+        cout<<"Ingrese el nombre del producto"<<endl;
+        getline(cin,buffer);
+        strcpy(inventario1.nombreProducto, buffer.c_str());
+        cout<<"Ingrese el costo del producto"<<endl;
+        cin>>inventario1.precio;
+        cin.ignore(1);
+        inventario1.cantUnidadesProducto = 1;
+        inventarios1[cantProductosSucursal1] = inventario1;
+        cantProductosSucursal1++;
+        cout<<"Se ha agregado el producto de manera exitosa"<<endl;
+        return cantProductosSucursal1;
+    }
+}
+int adicionarProductoSucursal2(sSucursal inventarios2 [], int  cantProductosSucursal2, sSucursal inventarios1 [], int cantProductosSucursal1){
+    sSucursal inventario1;
+    sSucursal inventario2;
+    string buffer;
+    int pos = -1;
+    cout << endl;
+    cin.ignore(1);
+    cout << "Ingrese el codigo del producto" << endl;
+    cin >> inventario2.codigoProducto;
+    cin.ignore(1);
+    bool exist = false;
+    bool exist1 = false;
+    for (int i = 0; i < cantProductosSucursal1; i++) {
+        if (strcmp(inventarios1[i].codigoProducto, inventario2.codigoProducto) == 0) {
+            exist1 = true;
+            pos = i;
+        }
+    }
+    for (int i = 0; i < cantProductosSucursal2; i++) {
+        if (strcmp(inventarios2[i].codigoProducto, inventario2.codigoProducto) == 0) {
+            exist = true;
+        }
+    }
+    if (exist && exist1) {
+        cout << "No ha sido posible agregar un nuevo producto al inventario, ya existe un producto con el mismo codigo, registrado en ambas sucursales"
+             << endl;
+        return cantProductosSucursal2;
+    } else if (exist){
+        cout <<"No ha sido posible realizar el proceso, producto existente en el inventario de la sucursal: "<<inventario2.nombreSucursal<<""<< endl;
+        return cantProductosSucursal2;
+    }else if (!exist && exist1) {
+        buffer = inventarios1[pos].nombreProducto;
+        strcpy(inventario2.nombreProducto, buffer.c_str());
+        inventario2.precio = inventarios1[pos].precio;
+        inventario2.cantUnidadesProducto = 1;
+        inventarios2[cantProductosSucursal2] = inventario2;
+        cantProductosSucursal2++;
+        cout << "Se ha agregado el producto de manera exitosa, teniendo en cuenta la existencia del codigo correspondiente a un producto fijo de la sucursal que recibe el nombre de: "<<inventario1.nombreSucursal<<" " << endl;
+        return cantProductosSucursal2;
+    }
+    else{
+        cout<<"Ingrese el nombre del producto"<<endl;
+        getline(cin,buffer);
+        strcpy(inventario2.nombreProducto, buffer.c_str());
+        cout<<"Ingrese el costo del producto"<<endl;
+        cin>>inventario2.precio;
+        cin.ignore(1);
+        inventario2.cantUnidadesProducto = 1;
+        inventarios2[cantProductosSucursal2] = inventario2;
+        cantProductosSucursal2++;
+        cout<<"Se ha agregado el producto de manera exitosa"<<endl;
+        return cantProductosSucursal2;
+    }
+}
+int eliminarCliente (scliente clientes [], int cantClientes){
+    char cedulaPosible [TAMNUM];
+    int pos = -1; //No se inicia en 0 porque ese es un valor en arreglo
+    cout <<"Digite el numero de identificacion del usuario al que desea eliminar"<< endl;
+    cin >> cedulaPosible;
+    bool existencia = false;
+    for (int i = 0; i < cantClientes; i++){
+        if (strcmp(clientes[i].cedula,cedulaPosible) == 0 ){
+            existencia = true;
+            pos = i;
+        }
+    }
+    if (!existencia){
+        cout <<"Operacion no llevada con exito, la cedula digitada no coincide con ninguna de las registradas"<< endl;
+        return cantClientes;
+    }
+    else{
+        for (int i = pos; i < (cantClientes-1);i++){
+            clientes[i] = clientes[i+1];
+        }
+        cout <<"Usuario eliminado de manera exitosa del sistema"<< endl;
+        return cantClientes-1;
+    }
+}
+void eliminarProductosInventario (sSucursal inventarios1 [], sSucursal inventarios2 [], int &cantProductosSucursal1, int &cantProductosSucursal2) {
+    int respuesta = 0;
+    do {
+        cout<< "Seleccione el numero de la tienda a escoger para eliminar los productos al interior del inventario de la misma"<< endl;
+        cout << "1. Tienda Azkaban" << endl;
+        cout << "2. Tienda Death Star" << endl;
+        cin >> respuesta;
+    }while(respuesta>2);
+    if (respuesta == 1) {
+        cantProductosSucursal1 = eliminarProductoSucursal1(inventarios1, cantProductosSucursal1, inventarios2, cantProductosSucursal2);
+    } else if (respuesta == 2) {
+        cantProductosSucursal2 = eliminarProductoSucursal2(inventarios2, cantProductosSucursal2, inventarios1, cantProductosSucursal1);
+    } else {
+        cout << "Opcion no valida, regresando al menu principal ..." << endl;
+    }
+}
+int eliminarProductoSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1, sSucursal inventarios2 [], int &cantProductosSucursal2){
+    sSucursal inventario1;
+    sSucursal inventario2;
+    char codigoVerificar[TAMNUM];
+    int pos = -1;
+    int pos2 = -1;
+    char respuesta;
+    cout<<"Digite el codigo del producto a eliminar del inventario de la sucursal que recibe el nombre de: "<<inventario1.nombreSucursal<<""<<endl;
+    cin >> codigoVerificar;
+    bool exist = false;
+    bool exist2 = false;
+    for(int i=0 ; i<cantProductosSucursal1; i++){
+        if(strcmp(inventarios1[i].codigoProducto, codigoVerificar) == 0){
+            exist = true;
+            pos = i;
+        }
+    }
+
+    for(int i=0 ; i<cantProductosSucursal2; i++){
+        if(strcmp(inventarios2[i].codigoProducto, codigoVerificar) == 0){
+            exist2 = true;
+            pos2 = i;
+        }
+    }
+    if(exist){
+        for(int i = pos; i < (cantProductosSucursal1-1) ; i++){
+            inventarios1[i] = inventarios1[i+1];
+        }
+        cout <<"Pruducto removido con exito del inventario de la sucursal: "<<inventario1.nombreSucursal<<" "<< endl << endl;
+        if (exist2){
+            cout <<"El codigo ingresado, corresponde a un producto registrado en las dos sucursales. Desea eliminarlo de ambas tiendas?"<< endl;
+            cout <<"Si su respuesta es afirmativa, digite el caracter S"<< endl;
+            cin >> respuesta;
+            if (respuesta == 'S' || respuesta == 's'){
+                for(int i = pos2; i < (cantProductosSucursal2-1) ; i++){
+                    inventarios2[i] = inventarios2[i+1];
+                }
+                cantProductosSucursal2 = cantProductosSucursal2-1;
+                cout <<"El producto, ha sido eliminado exitosamente del inventario de ambas sucursales"<< endl;
+            }
+            else{
+                cout <<"Ok, producto eliminado unicamente en el inventario de la sucursal: "<<inventario1.nombreSucursal<<" "<< endl;
+            }
+        }
+        return cantProductosSucursal1-1;
+    }
+    else if (!exist && exist2) {
+        cout << "El producto correspondiente al codigo ingresado no se encuentra disponible en la sucursal "<< inventario1.nombreSucursal << " " << endl;
+        cout << "Sin embargo, el codigo coincide con uno de los productos disponibles en la sucursal "<< inventario2.nombreSucursal << ". Desea eliminarlo del inventario de esta tienda?" << endl;
+        cout << "Si su respuesta es afirmativa, digite el caracter S" << endl;
+        cin >> respuesta;
+        if (respuesta == 'S' || respuesta == 's') {
+            for (int i = pos2; i < (cantProductosSucursal2 - 1); i++) {
+                inventarios2[i] = inventarios2[i + 1];
+            }
+            cantProductosSucursal2 = cantProductosSucursal2 - 1;
+            cout <<"Producto eliminado del inventario de la sucursal: "<<inventario2.nombreSucursal<<", ya no se encuentra en ninguno de los inventarios de GigaByte"<< endl;
+        }
+        else{
+            cout <<"Ok ... no se ha realizado el proceso de eliminar productos con respecto a la disponibilidad de los mismos"<< endl;
+        }
+        return cantProductosSucursal1;
+    }
+    else{
+        cout <<"No se ha podido realizar el proceso de manera satisfactoria, el codigo del producto ingresado; no coincide con los registrados en los inventarios"<< endl;
+        return cantProductosSucursal1;
+    }
+}
+int eliminarProductoSucursal2 (sSucursal inventarios2 [], int  cantProductosSucursal2, sSucursal inventarios1 [], int &cantProductosSucursal1){
+    sSucursal inventario1;
+    sSucursal inventario2;
+    char codigoVerificar[TAMNUM];
+    int pos = -1;
+    int pos1 = -1;
+    char respuesta;
+    cout<<"Digite el codigo del producto a eliminar del inventario de la sucursal que recibe el nombre de: "<<inventario1.nombreSucursal<<""<<endl;
+    cin >> codigoVerificar;
+    bool exist = false;
+    bool exist1 = false;
+    for(int i=0 ; i<cantProductosSucursal1; i++){
+        if(strcmp(inventarios1[i].codigoProducto, codigoVerificar) == 0){
+            exist1 = true;
+            pos1 = i;
+        }
+    }
+    for(int i=0 ; i<cantProductosSucursal2; i++){
+        if(strcmp(inventarios2[i].codigoProducto, codigoVerificar) == 0){
+            exist = true;
+            pos = i;
+        }
+    }
+    if(exist){
+        for(int i = pos; i < (cantProductosSucursal2 - 1) ; i++){
+            inventarios2[i] = inventarios2[i+1];
+        }
+        cout <<"Pruducto removido con exito del inventario de la sucursal: "<<inventario2.nombreSucursal<<" "<< endl << endl;
+        if (exist1){
+            cout <<"El codigo ingresado, corresponde a un producto registrado en las dos sucursales. Desea eliminarlo de ambas tiendas?"<< endl;
+            cout <<"Si su respuesta es afirmativa, digite el caracter S"<< endl;
+            cin >> respuesta;
+            if (respuesta == 'S' || respuesta == 's'){
+                for(int i = pos1; i < (cantProductosSucursal1 - 1) ; i++){
+                    inventarios1[i] = inventarios1[i+1];
+                }
+                cantProductosSucursal1 = cantProductosSucursal1 - 1;
+                cout <<"El producto, ha sido eliminado exitosamente del inventario de ambas sucursales"<< endl;
+            }
+            else{
+                cout <<"Ok, producto eliminado unicamente en el inventario de la sucursal: "<<inventario2.nombreSucursal<<" "<< endl;
+            }
+        }
+        return cantProductosSucursal2-1;
+    }
+    else if (!exist && exist1) {
+        cout << "El producto correspondiente al codigo ingresado no se encuentra disponible en la sucursal "
+             << inventarios2->nombreSucursal << " " << endl;
+        cout << "Sin embargo, el codigo coincide con uno de los productos disponibles en la sucursal "
+             << inventarios1->nombreSucursal << ". Desea eliminarlo del inventario de esta tienda?" << endl;
+        cout << "Si su respuesta es afirmativa, digite el caracter S" << endl;
+        cin >> respuesta;
+        if (respuesta == 'S' || respuesta == 's') {
+            for (int i = pos1; i < (cantProductosSucursal1 - 1); i++) {
+                inventarios1[i] = inventarios1[i + 1];
+            }
+            cantProductosSucursal1 = cantProductosSucursal1 - 1;
+            cout <<"Producto eliminado del inventario de la sucursal: "<<inventario1.nombreSucursal<<", ya no se encuentra en ninguno de los inventarios de GigaByte"<< endl;
+        }
+        else{
+            cout <<"Ok ... no se ha realizado el proceso de eliminar productos con respecto a la disponibilidad de los mismos"<< endl;
+        }
+        return cantProductosSucursal2;
+    }
+    else{
+        cout <<"No se ha podido realizar el proceso de manera satisfactoria, el codigo del producto ingresado; no coincide con los registrados en los inventarios"<< endl;
+        return cantProductosSucursal2;
+    }
+}
+string generarFechayHora(){
+    string fecha="vacio";
+// fecha/hora actual basado en el sistema actual */
+    time_t now = time(0);
+// Objeto de una estructura tm con fecha/hora local */
+    tm * time = localtime(&now);
+    vector<string> mes;
+    mes.emplace_back("1");
+    mes.emplace_back("2");
+    mes.emplace_back("3");
+    mes.emplace_back("4");
+    mes.emplace_back("5");
+    mes.emplace_back("6");
+    mes.emplace_back("7");
+    mes.emplace_back("8");
+    mes.emplace_back("9");
+    mes.emplace_back("10");
+    mes.emplace_back("11");
+    mes.emplace_back("12");
+
+    int year = 1900 + time->tm_year;
+    //Formato hora: hora:minutos:segundos (se imprime dentro de la función)
+    cout <<"Hora: "<< time->tm_hour << ":" << time->tm_min << ":" << time->tm_sec << endl;
+    //Formato fecha: día/mes/año (se concatena para ser retornada como una variable de tipo string)
+    fecha= to_string(time->tm_mday)+ " / " + to_string(time->tm_mon+1)+ " / " + to_string(year);
+    return fecha;
+}
+int registrarGenerarVenta(sFactura facturas[], scliente clientes[], sSucursal inventarios1[], sSucursal inventarios2[], int cantClientes, int cantProductosSucursal1, int cantProductosSucursal2, int cantVentas  ) {
+    char codigoAnalizar1[TAMNUM];
+    char codigoAnalizar2[TAMNUM];
+    char cedulaAnalizar[TAMNUM];
+    char rta;
+    char continuar = 'S';
+    int opcionSucursal;
+    int maxProductos2;
+    int pos = -1;
+    int pos2 = -1;
+    int posCod = -1;
+    int posCod2 = -1;
+    int cantProductosAdquirir = 0;
+    int num;
+    const float IVA=0.19;
+    bool existeCedula = false;
+    bool existeCodigo1 = false;
+    bool existeCodigo2 = false;
+    string buffer;
+    sFactura factura;
+    scliente cliente;
+    cin.ignore(1);
+    cout<< endl <<"Por favor digite el numero segun el medio de pago de su compra"<<endl;
+    do {
+        cout << "1. Tarjeta Debito" << endl;
+        cout << "2. Tarjeta Credito" << endl;
+        cout << "3. Efectivo" << endl;
+        cin>>num;
+    }while(num>3);
+    if(num==1){
+        buffer="Tarjeta Debito";
+        strcpy(facturas[cantVentas].medioPago,buffer.c_str());
+    }
+    else if(num==2){
+        buffer="Tarjeta Credito";
+        strcpy(facturas[cantVentas].medioPago,buffer.c_str());
+    }
+    else if(num==3){
+        buffer="Efectivo";
+        strcpy(facturas[cantVentas].medioPago,buffer.c_str());
+    }
+    cout << "Ingrese la cedula del cliente para verificar si se encuentra registrado en la base de datos" << endl;
+    cin >> cedulaAnalizar;
+    for (int i = 0; i < cantClientes; i++) {
+        cout<<endl;
+        if (strcmp(clientes[i].cedula, cedulaAnalizar) == 0) {
+            existeCedula = true;
+            pos = i;
+        }
+    }
+    if (!existeCedula) {
+        cout << "La cedula ingresada no coincide con la base de datos, desea registarlo?" << endl;
+        cin >> rta;
+        if (rta == 'S' || rta == 's') {
+            cout <<"Regresando al menu principal ..."<< endl;
+            return cantVentas;
+        } else {
+            cout << "No se realizara el registro del cliente para generar la factura de venta" << endl;
+            return cantVentas;
+        }
+    }
+    if (existeCedula) {
+        buffer = clientes[pos].cedula;
+        strcpy(facturas[cantVentas].cedulaCliente, buffer.c_str());
+        buffer = clientes[pos].nombre;
+        strcpy(facturas[cantVentas].nombreCliente, buffer.c_str());
+        buffer = clientes[pos].telefono;
+        strcpy(facturas[cantVentas].telefono, buffer.c_str());
+    }
+    cout << "Seleccione la sucursal donde se quiere registrar la compra" << endl;
+    cout << "Recuerde que:" << endl;
+    cout << "1. Tienda Azkaban" << endl;
+    cout << "2. Tienda Death Star" << endl;
+    cin >> opcionSucursal;
+    if (opcionSucursal == 1) {
+        buffer = "Tienda Azkaban";
+        strcpy(facturas[cantVentas].nombreSucursal, buffer.c_str());
+        do{
+            cout << "Ingrese el codigo del producto" << endl;
+            cin >> codigoAnalizar1;
+            for (int i = 0; i < cantProductosSucursal1; i++) {
+                if (strcmp(inventarios1[i].codigoProducto, codigoAnalizar1) == 0) {
+                    existeCodigo1 = true;
+                    posCod = i;
+                }
+            }
+            if (!existeCodigo1) {
+                cout<< "El codigo ingresado no coincide con los productos que se encuentran en el inventario de la sucursal"<< facturas[cantVentas].nombreSucursal<< endl;
+                cout <<"Operacion invalida, volviendo al menu principal ..."<< endl;
+                return cantVentas;
+            }
+            else if (existeCodigo1) {
+                int cantProCodigo = 0;
+                int maxProductos1 = inventarios1[posCod].cantUnidadesProducto;
+                if(maxProductos1==0){
+                    cout << "No existen suficientes unidades del producto" << endl <<endl;
+                    cout <<"Operacion invalida, volviendo al menu principal ..."<< endl;
+                    return cantVentas;
+                }
+                do {
+                    cout << endl;
+                    cout << "Que cantidad de productos del codigo: " << codigoAnalizar1 << " desea comprar?" << endl;
+                    cout << "Recuerde que el maximo de unidades disponibles en este momento es de "
+                         << maxProductos1 << " " << endl;
+                    cin >> cantProCodigo;
+                    if (cantProCodigo > maxProductos1) {
+                        cout << "No existen suficientes unidades del producto" << endl <<endl;
+                    }
+                } while (cantProCodigo > maxProductos1);
+                inventarios1[posCod].cantUnidadesProducto=inventarios1[posCod].cantUnidadesProducto-cantProCodigo;
+                if (cantProCodigo <= maxProductos1) {
+                    facturas[cantVentas].registros[cantProductosAdquirir].cant=cantProCodigo;
+                    buffer = inventarios1[posCod].codigoProducto;
+                    strcpy(facturas[cantVentas].codigoProducto, buffer.c_str());
+                    buffer = facturas[cantVentas].codigoProducto;
+                    strcpy(facturas[cantVentas].registros[cantProductosAdquirir].codigo, buffer.c_str());
+                    buffer = inventarios1[posCod].nombreProducto;
+                    strcpy(facturas[cantVentas].nombreProducto, buffer.c_str());
+                    buffer = facturas[cantVentas].nombreProducto;
+                    strcpy(facturas[cantVentas].registros[cantProductosAdquirir].nombre, buffer.c_str());
+                    facturas[cantVentas].precio = inventarios1[posCod].precio;
+                    facturas[cantVentas].registros[cantProductosAdquirir].precio = facturas[cantVentas].precio;
+                    facturas[cantVentas].totalporCantProductos=facturas[cantVentas].precio*cantProCodigo;
+                    facturas[cantVentas].subTotal = facturas[cantVentas].subTotal + facturas[cantVentas].totalporCantProductos;
+                    facturas[cantVentas].vIva = facturas[cantVentas].subTotal * IVA;
+                    facturas[cantVentas].vTotal = facturas[cantVentas].subTotal + facturas[cantVentas].vIva;
+                    cantProductosAdquirir++;
+                    cout << endl;
+                    cout << "Desea adicionar mas productos a su compra?" << endl;
+                    cout << "Si su respuesta es afirmativa, digite la letra S." << endl;
+                    cin >> continuar;
+                    cout << endl;
+                }
+            }
+        }while (continuar =='S'|| continuar =='s');
+        facturas[cantVentas].cantProductosAdquiridos=cantProductosAdquirir;
+        facturas[cantVentas].numFacturaVenta = cantVentas+1;
+        imprimirFactura1(facturas, cantVentas);
+        cantVentas++;
+        return cantVentas;
+    }
+    else if (opcionSucursal == 2) {
+        buffer = "Tienda Death Star";
+        strcpy(facturas[cantVentas].nombreSucursal, buffer.c_str());
+        do{
+            cout << "Ingrese el codigo del producto" << endl;
+            cin >> codigoAnalizar2;
+            for (int i = 0; i < cantProductosSucursal2; i++) {
+                if (strcmp(inventarios2[i].codigoProducto, codigoAnalizar2) == 0) {
+                    existeCodigo2 = true;
+                    posCod2 = i;
+                }
+            }
+            if (!existeCodigo2) {
+                cout<< "El codigo ingresado no coincide con los productos que se encuentran en el inventario de la sucursal"<<facturas[cantVentas].nombreSucursal<< endl;
+                cout <<"Operacion invalida, volviendo al menu principal ..."<< endl;
+                return cantVentas;
+            }
+            else if (existeCodigo2) {
+                int cantProCodigo = 0;
+                maxProductos2 = inventarios2[posCod2].cantUnidadesProducto;
+                if(maxProductos2==0){
+                    cout << "No existen suficientes unidades del producto" << endl <<endl;
+                    cout <<"Operacion invalida, volviendo al menu principal ..."<< endl;
+                    return cantVentas;
+                }
+                do {
+                    cout << endl;
+                    cout << "Que cantidad de productos del codigo: " << codigoAnalizar2 << " desea comprar?" << endl;
+                    cout << "Recuerde que el maximo de unidades disponibles en este momento es de "
+                         << maxProductos2 << " " << endl;
+                    cin >> cantProCodigo;
+                    if (cantProCodigo > maxProductos2) {
+                        cout << "No existen suficientes unidades del producto" << endl <<endl;
+                    }
+                } while (cantProCodigo > maxProductos2);
+                inventarios2[posCod2].cantUnidadesProducto = inventarios2[posCod2].cantUnidadesProducto-cantProCodigo;
+                if (cantProCodigo <= maxProductos2) {
+                    facturas[cantVentas].cantProductosAdquiridos += cantProCodigo;
+                    facturas[cantVentas].registros[cantProductosAdquirir].cant = cantProCodigo;
+                    buffer = inventarios2[posCod2].codigoProducto;
+                    strcpy(facturas[cantVentas].codigoProducto, buffer.c_str());
+                    buffer = facturas[cantVentas].codigoProducto;
+                    strcpy(facturas[cantVentas].registros[cantProductosAdquirir].codigo, buffer.c_str());
+                    buffer = inventarios2[posCod2].nombreProducto;
+                    strcpy(facturas[cantVentas].nombreProducto, buffer.c_str());
+                    buffer = facturas[cantVentas].nombreProducto;
+                    strcpy(facturas[cantVentas].registros[cantProductosAdquirir].nombre, buffer.c_str());
+                    facturas[cantVentas].precio = inventarios2[posCod2].precio;
+                    facturas[cantVentas].registros[cantProductosAdquirir].precio = facturas[cantVentas].precio;
+                    facturas[cantVentas].totalporCantProductos = facturas[cantVentas].precio * cantProCodigo;
+                    facturas[cantVentas].subTotal = facturas[cantVentas].subTotal + facturas[cantVentas].totalporCantProductos;
+                    facturas[cantVentas].vIva = facturas[cantVentas].subTotal * IVA;
+                    facturas[cantVentas].vTotal = facturas[cantVentas].subTotal + facturas[cantVentas].vIva;
+                    cantProductosAdquirir++;
+                    cout << endl;
+                    cout << "Desea adicionar mas productos a su compra?" << endl;
+                    cout << "Si su respuesta es afirmativa, digite la letra S." << endl;
+                    cin >> continuar;
+                    cout << endl;
+                }
+            }
+        }while (continuar =='S'|| continuar =='s');
+        facturas[cantVentas].cantProductosAdquiridos=cantProductosAdquirir;
+        facturas[cantVentas].numFacturaVenta=cantVentas+1;
+        imprimirFactura2(facturas, cantVentas);
+        cantVentas++;
+        return cantVentas;
+    }
+    else{
+        cout<<"El numero ingresado no corresponde a las sucursales... OPERACION INVALIDA"<<endl;
+        return cantVentas;
+    }
+
+}
+void imprimirFactura1(sFactura facturas[],  int  cantVentas){
+    cout<<"                                           "<<"Tienda GigaByte"<<"                           "<<endl;
+    cout<<"                                            " <<facturas[cantVentas].nombreSucursal<<"            "<<endl;
+    cout<<"                                     "<<"Factura Electronica de Venta:"<<facturas[cantVentas].numFacturaVenta<<endl;
+    cout<<endl;
+    string fecha=generarFechayHora();
+    cout<<"Fecha: "<<fecha<<endl;
+    string buffer=fecha;
+    strcpy(facturas[cantVentas].fecha, buffer.c_str());
+    cout<<"CC:"<< facturas[cantVentas].cedulaCliente<<endl;
+    cout<<"Cliente:"<< facturas[cantVentas].nombreCliente<<endl;
+    cout<<"Telefono:"<< facturas[cantVentas].telefono<<endl;
+    cout<<"Medio de Pago:"<< facturas[cantVentas].medioPago<<endl;
+    cout << setw(110) << setfill('-') << '\n' << setfill(' ');
+    cout << "| ";
+    cout << left << setw(5) << "#";
+    cout << "| ";
+    cout << left << setw(45) << "Nombre Articulo";
+    cout << "| ";
+    cout << left << setw(30) << "Codigo Articulo";
+    cout << "| ";
+    cout << left << setw(19) << "Precio c/u";
+    cout << "| ";
+    cout << setw(110) << setfill('-') << '\n' << setfill(' ') << '\n';
+    for(int i=0;i<facturas[cantVentas].cantProductosAdquiridos;i++){
+        cout << "| ";
+        cout << left << setw(5) << facturas[cantVentas].registros[i].cant;
+        cout << "| ";
+        cout << left << setw(45) << facturas[cantVentas].registros[i].nombre;
+        cout << "| ";
+        cout << left << setw(30) << facturas[cantVentas].registros[i].codigo;
+        cout << "| ";
+        cout << left << setw(19) << facturas[cantVentas].registros[i].precio;
+        cout << "| " << endl;
+    }
+    cout << setw(110) << setfill('-') << '-' << setfill(' ')<<endl;
+    cout << "Subtotal   "<<"          "<<facturas[cantVentas].subTotal<<endl;
+    cout << "Valor IVA  "<<"          "<<facturas[cantVentas].vIva<<endl;
+    cout << "Valor Total"<<"          "<<facturas[cantVentas].vTotal<<endl;
+    cout << setw(110) << setfill('-') << '-' << setfill(' ');
+}
+void imprimirFactura2(sFactura facturas[], int cantVentas){
+    cout<<"                                       "<<"Tienda GigaByte"<<"                           "<<endl;
+    cout<<"                                        "<<facturas[cantVentas].nombreSucursal<<"      " <<endl;
+    cout<<"                                     "<<"Factura Electronica de Venta:"<<facturas[cantVentas].numFacturaVenta<<endl;
+    cout<<endl;
+    string fecha=generarFechayHora();
+    cout<<"Fecha: "<<fecha<<endl;
+    string buffer=fecha;
+    strcpy(facturas[cantVentas].fecha, buffer.c_str());
+    cout<<"CC:"<< facturas[cantVentas].cedulaCliente<<endl;
+    cout<<"Cliente:"<< facturas[cantVentas].nombreCliente<<endl;
+    cout<<"Telefono:"<< facturas[cantVentas].telefono<<endl;
+    cout<<"Medio de Pago:"<< facturas[cantVentas].medioPago<<endl;
+    cout << setw(110) << setfill('-') << '\n' << setfill(' ');
+    cout << "| ";
+    cout << left << setw(5) << "#";
+    cout << "| ";
+    cout << left << setw(45) << "Nombre Articulo";
+    cout << "| ";
+    cout << left << setw(30) << "Codigo Articulo";
+    cout << "| ";
+    cout << left << setw(19) << "Precio c/u";
+    cout << "| ";
+    cout << setw(110) << setfill('-') << '\n' << setfill(' ') << '\n';
+    for(int i=0;i<facturas[cantVentas].cantProductosAdquiridos;i++){
+        cout << "| ";
+        cout << left << setw(5) << facturas[cantVentas].registros[i].cant;
+        cout << "| ";
+        cout << left << setw(45) <<facturas[cantVentas]. registros[i].nombre;
+        cout << "| ";
+        cout << left << setw(30) << facturas[cantVentas].registros[i].codigo;
+        cout << "| ";
+        cout << left << setw(19) << facturas[cantVentas].registros[i].precio;
+        cout << "| " << endl;
+    }
+    cout << setw(110) << setfill('-') << '-' << setfill(' ')<<endl;
+    cout << "Subtotal   "<<"          "<<facturas[cantVentas].subTotal<<endl;
+    cout << "Valor IVA  "<<"          "<<facturas[cantVentas].vIva<<endl;
+    cout << "Valor Total"<<"          "<<facturas[cantVentas].vTotal<<endl;
+    cout << setw(120) << setfill('-') << '-' << setfill(' ');
+}
+
+void modificarCantidadUnidades (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2){
+    int sucursalCambios;
+    int eleccion;
+    char codigo[TAMNUM];
+    int pos = -1;
+    int cantidad = 0;
+    cout <<"Digite el numero correspondiente a la surcusal, sobre la cual realizara cambios directos en la cantidad de productos especificos, al interior del inventario"<< endl;
+    cout <<"Recuerde:"<< endl;
+    cout <<"1. Tienda Azkaban"<< endl;
+    cout <<"2. Tienda Death Star" << endl;
+    cin >> sucursalCambios;
+    cout << endl;
+    if (sucursalCambios == 1){
+        cin.ignore(1);
+        cout <<"Digite el codigo del producto"<< endl;
+        cin>>codigo;
+        for (int i = 0; i < cantProductosSucursal1 ; i++){
+            if (strcmp(inventarios1[i].codigoProducto,codigo)==0){
+                pos = i;
+            }
+        }
+        if (pos != -1){
+            cout <<"Existencia del producto verificada. Digite el numero de la opcion que supla su necesidad"<< endl;
+            cout <<"1. Adicionar productos que reciben el nombre: "<<inventarios1[pos].nombreProducto<<" "<< endl;
+            cout <<"2. Eliminar productos que reciben el nombre: "<<inventarios1[pos].nombreProducto<<" "<< endl;
+            cin >> eleccion;
+            if (eleccion == 1){
+                cout <<"Digite la cantidad de productos para realizar el proceso de adicion/sustraccion" << endl;
+                cin >> cantidad;
+                inventarios1[pos].cantUnidadesProducto = inventarios1[pos].cantUnidadesProducto + cantidad;
+            }
+            else if (eleccion == 2){
+                cout <<"Digite la cantidad de productos para realizar el proceso de adicion/sustraccion" << endl;
+                cin >> cantidad;
+                inventarios1[pos].cantUnidadesProducto = inventarios1[pos].cantUnidadesProducto - cantidad;
+            }
+            else{
+                cout<<"OPCION INVALIDA"<<endl;
+            }
+        }
+        else{
+            cout <<"No ha sido posible realizar el proceso de manera optima, el codigo seleccionado no corresponde a ninguno de los elementos de la sucursal ingresada"<< endl;
+        }
+    }
+    else if (sucursalCambios == 2){
+        cin.ignore(1);
+        cout <<"Digite el codigo del producto"<< endl;
+        cin>>codigo;
+        for (int i = 0; i < cantProductosSucursal2 ; i++){
+            if (strcmp(inventarios2[i].codigoProducto,codigo)==0){
+                pos = i;
+            }
+        }
+        if (pos != -1){
+            cout <<"Existencia del producto verificada. Digite el numero de la opcion que supla su necesidad"<< endl;
+            cout <<"1. Adicionar en cantidad de productos, aquellos que reciben el nombre: "<<inventarios2[pos].nombreProducto<<" "<< endl;
+            cout <<"2. Disminuir en cantidad productos, aquellos que reciben el nombre: "<<inventarios2[pos].nombreProducto<<" "<< endl;
+            cin >> eleccion;
+            if (eleccion == 1){
+                cout <<"Digite la cantidad de productos para realizar el proceso de adicion/sustraccion" << endl;
+                cin >> cantidad;
+                inventarios2[pos].cantUnidadesProducto = inventarios2[pos].cantUnidadesProducto + cantidad;
+            }
+            else if (eleccion == 2){
+                cout <<"Digite la cantidad de productos para realizar el proceso de adicion/sustraccion" << endl;
+                cin >> cantidad;
+                inventarios2[pos].cantUnidadesProducto = inventarios2[pos].cantUnidadesProducto - cantidad;
+            }
+            else{
+                cout << "OPCION INVALIDA" << endl;
+            }
+        }
+        else{
+            cout <<"No ha sido posible realizar el proceso de manera optima, el codigo seleccionado no corresponde a ninguno de los elementos de la sucursal ingresada"<< endl;
+        }
+    }
+    else{
+        cout <<"Opcion no valida. Abortando proceso ..."<< endl;
+    }
+}
+void modificarPrecioUnidades (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2){
+    int sucursalCambios;
+    int eleccion;
+    char codigo[TAMNUM];
+    int pos = -1;
+    int cantidad = 0;
+    cout <<"Digite el numero correspondiente a la surcusal, sobre la cual realizara cambios directos en la cantidad de productos especificos, al interior del inventario"<< endl;
+    cout <<"Recuerde:"<< endl;
+    cout <<"1. Tienda Azkaban"<< endl;
+    cout <<"2. Tienda Death Star" << endl;
+    cin >> sucursalCambios;
+    cout << endl;
+    if (sucursalCambios == 1){
+        cin.ignore(1);
+        cout <<"Digite el codigo del producto"<< endl;
+        cin>>codigo;
+        for (int i = 0; i < cantProductosSucursal1 ; i++){
+            if (strcmp(inventarios1[i].codigoProducto,codigo)==0){
+                pos = i;
+            }
+        }
+        if (pos != -1){
+            int pos2 = -1;
+            cout <<"Digite el nuevo precio del producto para realizar el proceso de cambio" << endl;
+            cin >> cantidad;
+            inventarios1[pos].precio = cantidad;
+            cout<<"Precio cambiado con exito"<<endl << endl;
+            bool existenciaInventario2 = false;
+            for (int i = 0; i < cantProductosSucursal2 ; i++){
+                if (strcmp(inventarios2[i].codigoProducto,codigo)==0){
+                    existenciaInventario2 = true;
+                    pos2 = i;
+                }
+            }
+            if (existenciaInventario2){
+                cout << endl <<"Teniendo en cuenta que el producto se encuentra disponile en las dos sucursales, ha sido modificado al interior de ambas"<< endl;
+                inventarios2[pos2].precio = cantidad;
+            }
+        }
+    }
+    else if (sucursalCambios == 2){
+        cin.ignore(1);
+        cout <<"Digite el codigo del producto"<< endl;
+        cin>>codigo;
+        for (int i = 0; i < cantProductosSucursal2 ; i++){
+            if (strcmp(inventarios2[i].codigoProducto,codigo)==0){
+                pos = i;
+            }
+        }
+        if (pos != -1){
+            int pos1 = -1;
+            cout <<"Digite el nuevo precio del producto para realizar el proceso de cambio" << endl;
+            cin >> cantidad;
+            inventarios2[pos].precio = cantidad;
+            cout<<"Precio cambiado con exito"<<endl << endl;
+            bool existenciaInventario1 = false;
+            for (int i = 0; i < cantProductosSucursal1 ; i++){
+                if (strcmp(inventarios1[i].codigoProducto,codigo)==0){
+                    existenciaInventario1 = true;
+                    pos1 = i;
+                }
+            }
+            if (existenciaInventario1){
+                cout << endl <<"Teniendo en cuenta que el producto se encuentra disponile en las dos sucursales, ha sido modificado al interior de ambas"<< endl;
+                inventarios1[pos1].precio = cantidad;
+            }
+        }
+    }
+    else{
+        cout <<"Opcion no valida. Abortando proceso ..."<< endl;
+    }
+}
+void buscarProductosNombre (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2){
+    sSucursal inventario1;
+    sSucursal inventario2;
+    int sucursal;
+    cout<<"Ingrese la sucursal en la cual quiere saber la existencia de los productos"<<endl;
+    cout << "1. Tienda Azkaban" << endl;
+    cout << "2. Tienda Death Star" << endl;
+    cin >> sucursal;
+    if(sucursal == 1){
+        cout<<"Los productos disponibles en: Tienda Azkaban, son los siguientes:"<<endl;
+        cout << setw(100) << setfill('-') << '\n' << setfill(' ');
+        cout << "| "
+             << left << setw(15) << "Codigo Producto"
+             << "|"
+             << left << setw(45) << "Nombre"
+             << "|"
+             << left << setw(15) << "Precio"
+             << "|"
+             << left << setw(10) << "Cantidad"
+             << "| ";
+        cout << setw(100) << setfill('-') << '\n' << setfill(' ') << '\n';
+        for(int i=0;i<cantProductosSucursal1;i++){
+            cout << "| "
+                 << setw(15) << inventarios1[i].codigoProducto
+                 << "|"
+                 << left << setw(45) << inventarios1[i].nombreProducto
+                 << "|"
+                 << left << setw(15) << inventarios1[i].precio
+                 << "|"
+                 << left << setw(10) << inventarios1[i].cantUnidadesProducto
+                 << "|"
+                 << endl;
+        }
+        cout << setw(100) << setfill('-') << '-' << setfill(' ');
+    }
+    else if (sucursal==2){
+        cout<<"Los productos disponibles en, tienda Death Star son los siguientes:"<<endl;
+        cout << setw(96) << setfill('-') << '\n' << setfill(' ');
+        cout << "| "
+             << left << setw(20) << "Codigo Producto"
+             << "|"
+             << left << setw(30) << "Nombre"
+             << "|"
+             << left << setw(19) << "Precio"
+             << "|"
+             << left << setw(15) << "Cantidad"
+             << "| ";
+        cout << setw(96) << setfill('-') << '\n' << setfill(' ') << '\n';
+        for(int i=0;i<cantProductosSucursal2;i++){
+            cout << "| "
+                 << setw(20) << inventarios2[i].codigoProducto
+                 << "|"
+                 << left << setw(30) << inventarios2[i].nombreProducto
+                 << "|"
+                 << left << setw(19) << inventarios2[i].precio
+                 << "|"
+                 << left << setw(15) << inventarios2[i].cantUnidadesProducto
+                 << "|"
+                 << endl;
+        }
+        cout << setw(96) << setfill('-') << '-' << setfill(' ');
+    }
+}
+void buscarProductosporCodigo (sSucursal inventarios1[], sSucursal inventarios2[], int cantProductosSucursal1, int cantProductosSucursal2){
+    sSucursal inventario1;
+    sSucursal inventario2;
+    char codigo [TAMNUM];
+    bool disponibilidad1 = false;
+    bool disponibilidad2 = false;
+    bool existencia1 = false;
+    bool existencia2 = false;
+    cout <<"Escriba el codigo del producto sobre el cual desea consultar la disponibilidad y lugar de acceso al mismo"<< endl;
+    cin >> codigo;
+    for (int i = 0; i<cantProductosSucursal1; i++){
+        if (strcmp(inventarios1[i].codigoProducto,codigo)==0){
+            existencia1 = true;
+            if (inventarios1[i].cantUnidadesProducto!= 0){
+                disponibilidad1 = true;
+            }
+        }
+    }
+    for (int i = 0; i<cantProductosSucursal2; i++){
+        if (strcmp(inventarios2[i].codigoProducto,codigo)==0){
+            existencia2 = true;
+            if (inventarios2[i].cantUnidadesProducto!= 0){
+                disponibilidad2 = true;
+            }
+        }
+    }
+    if (!existencia1 && !existencia2){
+        cout <<"Operacion erronea, el codigo ingresado, no corresponde a los productos dentro del inventario de las sucursales. Regresando al menu principal ..."<< endl;
+    }
+    else if (!disponibilidad1 && !disponibilidad2){
+        cout <<"El codigo corresponde a un producto registrado, sin embargo; el mismo se encuentra agotado en ambas tiendas, no hay existencias en este momento."<< endl;
+    }
+    if (existencia1) {
+        if (disponibilidad1) {
+            cout << "Existencias en sucursal " << "Tienda Azkaban" << ": " << endl;
+            cout << setw(63) << setfill('-') << '\n' << setfill(' ');
+            cout << "| "
+                 << left << setw(35) << "Nombre"
+                 << "|"
+                 << left << setw(22) << "Cantidad De unidades"
+                 << " | ";
+            cout << setw(63) << setfill('-') << '\n' << setfill(' ') << '\n';
+            for (int i = 0; i < cantProductosSucursal1; i++) {
+                if ((strcmp(inventarios1[i].codigoProducto, codigo) == 0) && inventarios1[i].cantUnidadesProducto != 0) {
+                    cout << "| "
+                         << setw(35) << inventarios1[i].nombreProducto
+                         << "|"
+                         << left << setw(23) << inventarios1[i].cantUnidadesProducto
+                         << "|"
+                         << endl;
+                }
+            }
+            cout << setw(63) << setfill('-') << '-' << setfill(' ');
+            cout<<endl;
+        }
+        else{
+            cout <<"Unidades registradas con el codigo "<<codigo<<" se encuentran agotadas en la sucursal que recibe el nombre de "<<endl;
+            cout<<"Tienda Azkaban"<<" "<< endl;
+        }
+    }
+    else{
+        cout <<"El codigo ingresado, no se encuentra registrado como unidad de productos en la sucursal que recibe el nombre de"<<endl;
+        cout<<"Tienda Azkaban"<<" "<< endl;
+    }
+    if (existencia2) {
+        cout << endl << endl;
+        if (disponibilidad2) {
+            cout << "Existencias en sucursal " << "Death Star" << ": " << endl;
+            cout << setw(63) << setfill('-') << '\n' << setfill(' ') << '\n';
+            cout << "| "
+                 << left << setw(35) << "Nombre"
+                 << "|"
+                 << left << setw(22) << "Cantidad De unidades"
+                 << " | ";
+            cout << setw(63) << setfill('-') << '\n' << setfill(' ') << '\n';
+            for (int i = 0; i < cantProductosSucursal2; i++) {
+                if ((strcmp(inventarios2[i].codigoProducto, codigo) == 0) && inventarios2[i].cantUnidadesProducto != 0) {
+                    cout << "| "
+                         << setw(35) << inventarios2[i].nombreProducto
+                         << "|"
+                         << left << setw(23) << inventarios2[i].cantUnidadesProducto
+                         << "|"
+                         << endl;
+                }
+            }
+            cout << setw(63) << setfill('-') << '-' << setfill(' ');
+        }
+        else{
+            cout <<"Unidades registradas con el codigo "<<codigo<<" se encuentran agotadas en la sucursal que recibe el nombre de "<<endl;
+            cout<<"Death Star"<<" "<< endl << endl;
+        }
+    }
+    else{
+        cout <<"El codigo ingresado, no se encuentra registrado como unidad de productos en la sucursal que recibe el nombre de "<<endl;
+        cout<<"Death Star"<<" "<< endl;
+    }
+}
+void consultaVentas (sFactura facturas[], int cantVentas){
+    string cedula;
+    int pos = -1;
+    cout << endl << "Digite la cedula del cliente a quien desea consultar el historico de sus ventas"<< endl;
+    cin >> cedula;
+    bool existencia = false;
+    for (int i = 0; i < cantVentas; i++){
+        if (facturas[i].cedulaCliente == cedula){
+            existencia = true;
+            pos = i;
+        }
+    }
+    if (existencia){
+        cout <<"Compras realizadas por el cliente identificado con CC "<<facturas[pos].cedulaCliente << endl;
+        cout <<setw (122) << setfill('-') << '\n' << setfill (' ');
+        for (int i = 0; i < cantVentas; i++){
+            if (facturas[i].cedulaCliente == cedula) {
+                cout << "#"<<" factura: "<<facturas[i].numFacturaVenta<<endl
+                     << "Nombre Cliente: "<<facturas[i].nombreCliente<<endl
+                     <<  "Fecha Compra: "<<facturas[i].fecha<<endl
+                     <<  "Sucursal: "<<facturas[i].nombreSucursal<<endl
+                     << "Total Venta: "<<facturas[i].vTotal<<endl
+                     <<endl;
+                cout << setw(122) << setfill('-') << '\n' << setfill(' ');
+                cout<<endl;
+                cout << "| ";
+                cout << left << setw(5) << "# ";
+                cout << "| ";
+                cout << left << setw(30) << "Codigo Articulo";
+                cout << "| ";
+                cout << left << setw(45) << "Nombre Articulo";
+                cout << "| ";
+                cout << left << setw(30) << "Precio del Articulo";
+                cout << "| ";
+                cout <<endl;
+                cout << setw(122) << setfill('-') << '\n' << setfill(' ') << '\n';
+                for(int j=0; j<facturas[i].cantProductosAdquiridos;j++) {
+                    cout << "| ";
+                    cout << left << setw(5) << facturas[i].registros[j].cant;
+                    cout << "| ";
+                    cout << left << setw(30) << facturas[i].registros[j].codigo;
+                    cout << "| ";
+                    cout << left << setw(45) << facturas[i].registros[j].nombre;
+                    cout << "| ";
+                    cout << left << setw(30) << facturas[i].registros[j].precio;
+                    cout << "| ";
+                    cout<<endl;
+                }
+                cout <<setw (122) << setfill('-') << '-' << setfill (' ');
+                cout<<endl<<endl<<endl<<endl;
+            }
+        }
+        cout <<setw (122) << setfill('-') << '-' << setfill (' ');
+        cout<<endl<<endl<<endl;
+    }
+    if (!existencia){
+        cout <<"La cedula ingresada: "<<cedula<<" no corresponde con los datos de registro de ninguno de los clientes" <<endl <<"de la Tienda GigaByte en ninguna de las sucursales"<< endl;
+    }
+}
+int cargarClientes(scliente clientes[]) {
+
+    int cantClientes = 0;
+    // 1) ABRIR EL ARCHIVO (ABRIR EL APUNTADOR DEL ARCHIVO)
+    FILE *archivo;
+    archivo = fopen(rutaArchivoClientes, "rb"); // "rb": read binary
+    if (archivo != NULL) {
+        // 2) DEFINIR EL CLIENTE (BUFFER DE LECTURA)
+        scliente cliente;
+        // 3) LEER EL CLIENTE DESDE EL ARCHIVO
+        while(fread(&cliente, sizeof(scliente), 1, archivo) == 1) {
+            clientes[cantClientes] = cliente;
+            cantClientes++;
+        }
+        // 5) CERRAR EL ARCHIVO
+        fclose(archivo);
+    } else {
+        cout << "ERROR: No se pudo abrir el archivo " << rutaArchivoClientes << endl;
+        cout << "Abortando carga de datos" << endl;
+    }
+    return cantClientes;
+}
+int cargarProductosSucursal1 (sSucursal inventarios1[]){
+    int cantProductosSucursal1 = 0;
+    FILE * doc;
+    doc = fopen(rutaArchivoProductosSucursal1, "rb");
+    if (doc != NULL)
+    {
+        sSucursal inventario;
+        while (fread(&inventario, sizeof (sSucursal), 1, doc) == 1){
+            inventarios1[cantProductosSucursal1] = inventario;
+            cantProductosSucursal1++;
+        }
+        fclose(doc);
+    }else {
+        cout << "ERROR: No se pudo abrir el archivo " << rutaArchivoProductosSucursal1 << endl;
+        cout << "Abortando carga de datos" << endl;
+    }
+    return cantProductosSucursal1;
+}
+int cargarProductosSucursal2 (sSucursal inventarios2[]){
+    int cantProductosSucursal2 = 0;
+    FILE * doc;
+    doc = fopen(rutaArchivoProductosSucursal2, "rb");
+    if (doc != NULL){
+        sSucursal inventario;
+        while (fread(&inventario, sizeof (sSucursal), 1, doc) == 1){
+            inventarios2[cantProductosSucursal2] = inventario;
+            cantProductosSucursal2++;
+        }
+        fclose(doc);
+    }else {
+        cout << "ERROR: No se pudo abrir el archivo " << rutaArchivoProductosSucursal2 << endl;
+        cout << "Abortando carga de datos" << endl;
+    }
+    return cantProductosSucursal2;
+}
+int cargarRegistrodeVentas (sFactura facturas []){
+    int cantVentas = 0;
+    FILE * doc;
+    doc = fopen (rutaArchivoRegistroFacturas, "rb");
+    if (doc == NULL){
+        cout <<"ERROR: No se pudo abrir el archivo "<<rutaArchivoRegistroFacturas << endl;
+        cout <<"Abortando carga de datos"<< endl;
+    }
+    else{
+        sFactura factura;
+        while (fread(&factura, sizeof (sFactura), 1, doc) == 1){
+            facturas[cantVentas] = factura;
+            cantVentas++;
+        }
+        fclose(doc);
+    }
+    return cantVentas;
+}
+void guardarClientes(scliente clientes[], int cantClientes) {
+    FILE *archivo;
+    archivo = fopen(rutaArchivoClientes, "wb"); // "wb": write binary
+    if (archivo != NULL) {
+        for (int i = 0; i < cantClientes; i++) {
+            scliente cliente = clientes[i];
+            fwrite(&cliente, sizeof(scliente), 1, archivo);
+        }
+        fclose(archivo);
+    }
+    else {
+        cout << "ERROR: No se pudo abrir el archivo " << rutaArchivoClientes << endl;
+        cout << "Abortando guardado de datos" << endl;
+    }
+}
+void guardarProductosSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1) {
+    FILE *archivo;
+    archivo = fopen(rutaArchivoProductosSucursal1, "wb");
+    if (archivo != NULL) {
+        for (int i = 0; i < cantProductosSucursal1; i++) {
+            sSucursal inventario = inventarios1[i];
+            fwrite(&inventario, sizeof(sSucursal), 1, archivo);
+        }
+        fclose(archivo);
+    } else {
+        cout << "ERROR: No se pudo abrir el archivo" << rutaArchivoProductosSucursal1 << endl;
+        cout << "Abortando guardado de datos" << endl;
+    }
+}
+void guardarProductosSucursal2 (sSucursal inventarios2 [], int  cantProductosSucursal2){
+    FILE * archivo;
+    archivo = fopen(rutaArchivoProductosSucursal2, "wb");
+    if (archivo != NULL) {
+        for (int i = 0; i < cantProductosSucursal2; i++) {
+            sSucursal inventario = inventarios2[i];
+            fwrite(&inventario, sizeof(sSucursal), 1, archivo);
+        }
+        fclose(archivo);
+    }
+    else{
+        cout <<"ERROR: No se pudo abrir el archivo" << rutaArchivoProductosSucursal2 << endl;
+        cout <<"Abortando guardado de datos"<< endl;
+    }
+}
+void guardarRegistroVentas (sFactura facturas [], int cantVentas){
+    FILE * archivo;
+    archivo = fopen (rutaArchivoRegistroFacturas, "wb");
+    if (archivo != NULL) {
+        for (int i = 0; i < cantVentas; i++) {
+            sFactura factura = facturas[i];
+            fwrite (&factura, sizeof (sFactura), 1,archivo);
+        }
+        fclose(archivo);
+    }
+    else{
+        cout <<"ERROR: No se pudo abrir el archivo" << rutaArchivoProductosSucursal2 << endl;
+        cout <<"Abortando guardado de datos"<< endl;
+    }
+}
+void guardartxtClientes (scliente clientes [], int cantClientes){
+    ofstream salida;
+    salida.open ("datosClientes.txt", ios::out);
+    if (salida.fail()){
+        cout <<"Error al realizar la apertura archivo informacion clientes"<< endl;
+    }
+    else{
+        salida << setw(95) << setfill('-') << '\n' << setfill(' ');
+        salida << "| "
+               << left << setw(50) << "Nombre"
+               << "|"
+               << left << setw(25) << "Cedula"
+               << " | "
+               << left << setw(12) << "Telefono"
+               << "|";
+        salida << setw(95) << setfill('-') << '\n' << setfill(' ') << '\n';
+        for (int i = 0; i < cantClientes; i++){
+            salida << "| "
+                   << setw(50) << clientes[i].nombre
+                   << "|"
+                   << left << setw(25) << clientes[i].cedula
+                   << " | "
+                   << left << setw(12) << clientes[i].telefono
+                   << "|"
+                   << endl;
+        }
+        salida << setw(95) << setfill('-') << '-' << setfill(' ');
+    }
+    salida.close();
+}
+void guardartxtSucursal1 (sSucursal inventarios1 [], int  cantProductosSucursal1){
+    ofstream salida;
+    salida.open ("datosInventarioSucursal1.txt", ios::out);
+    if (salida.fail()){
+        cout <<"Error al realizar la apertura archivo informacion clientes"<< endl;
+    }
+    else{
+        salida <<"Informacion Tienda Azkaban"<< endl;
+        salida << setw(150) << setfill('-') << '\n' << setfill(' ');
+        salida << "| "
+               << left << setw(20) << "Codigo Producto"
+               << "|"
+               << left << setw(70) << "Nombre del Producto"
+               << " | "
+               << left << setw(22) << "Precio del producto"
+               << "|"
+               << left << setw(21) << "Cantidad de Unidades"
+               << "|";
+        salida << setw(150) << setfill('-') << '\n' << setfill(' ') << '\n';
+        for (int i = 0; i < cantProductosSucursal1; i++){
+            salida << "| "
+                   << setw(20) << inventarios1[i].codigoProducto
+                   << "|"
+                   << left << setw(70) << inventarios1[i].nombreProducto
+                   << " | "
+                   << left << setw(22) << inventarios1[i].precio
+                   << "|"
+                   << left << setw(21) << inventarios1[i].cantUnidadesProducto
+                   << "|"
+                   << endl;
+        }
+        salida << setw(150) << setfill('-') << '-' << setfill(' ');
+    }
+    salida.close();
+}
+void guardartxtSucursal2 (sSucursal inventarios2 [], int  cantProductosSucursal2){
+    ofstream salida;
+    salida.open ("datosInventarioSucursal2.txt", ios::out);
+    if (salida.fail()){
+        cout <<"Error al realizar la apertura archivo informacion clientes"<< endl;
+    }
+    else{
+        salida <<"Informacion Tienda Death Star"<< endl;
+        salida << setw(142) << setfill('-') << '\n' << setfill(' ');
+        salida << "| "
+               << left << setw(20) << "Codigo Producto"
+               << "|"
+               << left << setw(70) << "Nombre del Producto"
+               << " | "
+               << left << setw(22) << "Precio del producto"
+               << "|"
+               << left << setw(21) << "Cantidad de Unidades"
+               << "|";
+        salida << setw(142) << setfill('-') << '\n' << setfill(' ') << '\n';
+        for (int i = 0; i < cantProductosSucursal2; i++){
+            salida << "| "
+                   << setw(20) << inventarios2[i].codigoProducto
+                   << "|"
+                   << left << setw(70) << inventarios2[i].nombreProducto
+                   << " | "
+                   << left << setw(22) << inventarios2[i].precio
+                   << "|"
+                   << left << setw(21) << inventarios2[i].cantUnidadesProducto
+                   << "|"
+                   << endl;
+        }
+        salida << setw(142) << setfill('-') << '-' << setfill(' ');
+    }
+    salida.close();
+}
+void guardartxtVentas (sFactura facturas [], int cantVentas){
+    ofstream salida;
+    salida.open ("registroVentasGigaByte.txt", ios::out);
+    if (salida.fail()){
+        cout <<"ERROR al realizar la apertura del archivo de registro de ventas"<< endl;
+    }
+    else {
+        for (int i = 0; i < cantVentas; i++) {
+
+            salida<<endl;
+            salida<<endl;
+            salida<<endl;
+            salida << setw(220) << setfill('-') << '\n' << setfill(' ');
+            salida<<endl;
+            salida << "| "
+                   << right << setw(25) << "Numero de Factura:"<< facturas[i].numFacturaVenta
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   << right << setw(25) << "Fecha del Registro:"<< facturas[i].fecha
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   << right << setw(25) << "Sucursal:"<< facturas[i].nombreSucursal
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   << right << setw(25) << "Cliente:"<< facturas[i].nombreCliente
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   << right << setw(25) << "Medio de Pago:"<< facturas[i].medioPago
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   <<endl;
+            salida<<endl;
+            salida << setw(220) << setfill('-') << '\n' << setfill(' ');
+            salida << "| ";
+            salida << left << setw(30) << "Codigo Articulo";
+            salida << "| ";
+            salida << left << setw(45) << "Nombre Articulo";
+            salida << "| ";
+            salida << left << setw(30) << "Precio del Articulo";
+            salida << "| ";
+            salida <<endl;
+            salida << setw(220) << setfill('-') << '\n' << setfill(' ') << '\n';
+            for (int j = 0; j < facturas[i].cantProductosAdquiridos;j++) {
+                salida << "| ";
+                salida << left << setw(30) << facturas[i].registros[j].codigo;
+                salida << "| ";
+                salida << left << setw(45) << facturas[i].registros[j].nombre;
+                salida << "| ";
+                salida << left << setw(30) << facturas[i].registros[j].precio;
+                salida << "| ";
+                salida<<endl;
+            }
+            salida << setw(220) << setfill('-') << '-' << setfill(' ');
+            salida<<endl;
+            salida << "| "
+                   << right << setw(25) << "Subtotal:"<< facturas[i].subTotal
+                   <<"\t"
+                   <<"\t"
+                   << right << setw(25) << "Total:"<< facturas[i].vTotal
+                   <<"\t"
+                   << "|"
+                   <<"\t"
+                   <<endl;
+            salida << setw(220) << setfill('-') << '-' << setfill(' ');
+        }
+        salida<<endl<<endl<<endl<<endl;
+        salida.close();
+    }
+}
